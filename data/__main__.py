@@ -3,6 +3,7 @@ import os
 import numpy as np
 from pathlib import Path
 import tiktoken
+import requests
 
 collections = {
     "herodotus": "https://gist.githubusercontent.com/bellthomas/9c776e96f58afaa584585060c7f1e8d6/raw/7be7fdf402b4845d748480dadf2d45329b0bb1c7/herodotus_histories.txt"
@@ -11,7 +12,7 @@ collections = {
 if __name__ == "__main__":
     # Handle arguments.
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--collection', help='')
+    parser.add_argument('--collection', default="herodotus", help='')
     parser.add_argument('--split', help='', type=float, default=0.9)
     args = parser.parse_args()
 
@@ -20,8 +21,19 @@ if __name__ == "__main__":
         exit(1)
 
     path = Path(f"{os.path.dirname(__file__)}/{args.collection}").absolute()
-    # path.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {args.collection}...")
+    path.mkdir(parents=True, exist_ok=True)
+
+    # If we don't have a data file, download it.
+    if not os.path.isfile(path / "data.txt"):
+        if not args.collection in collections:
+            exit("Unknown")
+        print(f"Downloading collection: {args.collection}")
+        response = requests.get(collections[args.collection])
+        if response.status_code == 200:
+            with open(path / "data.txt", "w") as f:
+                f.write(response.text)
+        else:
+            exit("Failed to download file.")
 
     # Load and split.
     data = ""

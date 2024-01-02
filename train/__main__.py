@@ -11,4 +11,5 @@ args = parser.parse_args()
 
 # TODO: validation, use args.
 data_path = Path(f"{os.path.dirname(D.__file__)}/{args.collection}").absolute()
+print(data_path)
 Trainer.train(args, data_path)

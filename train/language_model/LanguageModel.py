@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from typing import Optional
 from .Transformer import Transformer
 from .Config import Config
-from ..DataLoader import DataLoader
+from ..data import DataLoader
 
 
 class LanguageModel(nn.Module):
