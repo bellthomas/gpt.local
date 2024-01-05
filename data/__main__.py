@@ -4,9 +4,20 @@ import numpy as np
 from pathlib import Path
 import tiktoken
 import requests
+from datasets import load_dataset
+
+from .dataset import DatasetManager
+
+data = DatasetManager("openwebtext")
+try:
+    data.prepare()
+except KeyboardInterrupt:
+    exit(0)
+exit(0)
 
 collections = {
-    "herodotus": "https://gist.githubusercontent.com/bellthomas/9c776e96f58afaa584585060c7f1e8d6/raw/7be7fdf402b4845d748480dadf2d45329b0bb1c7/herodotus_histories.txt"
+    "herodotus": "https://gist.githubusercontent.com/bellthomas/9c776e96f58afaa584585060c7f1e8d6/raw/7be7fdf402b4845d748480dadf2d45329b0bb1c7/herodotus_histories.txt",
+    "openwebtext": "openwebtext"
 }
 
 if __name__ == "__main__":
@@ -27,13 +38,29 @@ if __name__ == "__main__":
     if not os.path.isfile(path / "data.txt"):
         if not args.collection in collections:
             exit("Unknown")
-        print(f"Downloading collection: {args.collection}")
-        response = requests.get(collections[args.collection])
-        if response.status_code == 200:
-            with open(path / "data.txt", "w") as f:
-                f.write(response.text)
+        
+        if collections[args.collection].startswith("http"):
+            print(f"Downloading collection: {args.collection}")
+            response = requests.get(collections[args.collection])
+            if response.status_code == 200:
+                with open(path / "data.txt", "w") as f:
+                    f.write(response.text)
+            else:
+                exit("Failed to download file.")
         else:
-            exit("Failed to download file.")
+            # Loading using huggingface `datasets`.
+            print(f"Downloading collection using huggingface: {args.collection}")
+            dataset = load_dataset("openwebtext", num_proc=8, trust_remote_code=True)
+            split_dataset = dataset["train"].train_test_split(test_size=0.0005, seed=2357, shuffle=True)
+            print(split_dataset)
+            print("---")
+            encoding = tiktoken.get_encoding("gpt2")
+
+            def process(data):
+                return {}
+            new_dataset = split_dataset.map(process, num_proc=16)
+            print(new_dataset)
+            exit(0)
 
     # Load and split.
     data = ""
