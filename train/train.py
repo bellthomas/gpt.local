@@ -46,7 +46,7 @@ class Trainer:
             return Trainer.load_checkpoint(checkpoint, experiment_path, data_path)
         else:
             print("Experiment doesn't have any existing checkpoints, starting fresh.")
-            return Trainer.create(Config(device="mps"), experiment_path, data_path)
+            return Trainer(Config(device="mps"), experiment_path, data_path)
 
     ##############
         
