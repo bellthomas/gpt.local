@@ -1,6 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass
 from pickletools import optimize
+from tabnanny import check
 import torch
 import time
 import math
@@ -21,6 +22,7 @@ class Trainer:
     validation_cadence: int = 5 # steps
     checkpoint_filename: str = "checkpoint"
     checkpoint_path: Path
+    log_path: Path
 
     model: LanguageModel
     optimizer: torch.optim.AdamW
@@ -34,6 +36,7 @@ class Trainer:
         self.model = LanguageModel(self.config).to(self.config.device)
         self.optimizer = self.model.optimizer(1e-1, 6e-4, (0.9, 0.95)) # (weight_decay, learning_rate, (beta1, beta2))
         self.checkpoint_path = self.experiment_path / self.checkpoint_filename
+        self.log_path = self.experiment_path / "training.log"
 
     @staticmethod
     def load(experiment_path: Path, data_path: Path) -> 'Trainer':
@@ -96,6 +99,8 @@ class Trainer:
                 loss_estimate = model.estimate_loss(data, 1)
                 checkpoint = self.create_checkpoint(i, loss_estimate['validation'].item())
                 torch.save(checkpoint, self.experiment_path / "checkpoint")
+                with open(self.log_path, "a") as log:
+                    log.write(checkpoint.csv_row() + "\n")
                 print(checkpoint)
                 t0 = time.perf_counter()  # reset
 
