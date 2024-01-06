@@ -19,7 +19,7 @@ class Trainer:
     experiment_path: Path
     config: Config
 
-    validation_cadence: int = 5 # steps
+    validation_cadence: int = 50 # steps
     checkpoint_filename: str = "checkpoint"
     checkpoint_path: Path
     log_path: Path
