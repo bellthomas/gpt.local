@@ -17,14 +17,15 @@ class DatasetManager:
     trust_remote_code: bool = True
     training_split: str = "train"
     validation_split: Optional[str] = None
-    generated_validation_set_ratio: float = 0.0005  # smarter value?
+    test_set_ratio: float = 0.05
     feature_name: str = "text"
     encoding = get_encoding("gpt2")
 
 
     def prepare(self) -> None:
         print(f"Preparing dataset: {self.dataset}")
-        dataset_path = self.data_path / self.dataset
+        dataset_safe_id = self.dataset.replace("/", "-")
+        dataset_path = self.data_path / dataset_safe_id
         dataset_path.mkdir(parents=True, exist_ok=True)
 
         # Load dataset from Hugging Face.
@@ -44,10 +45,10 @@ class DatasetManager:
         for split, dataset in dataset.items():
             length = np.sum(dataset['count'], dtype=np.uint64)
             buffer = np.memmap(dataset_path / split, dtype=np.uint16, mode='w+', shape=(length,))
-            total_batches = ceil(length / (50 * 1024 * 1204))  # Approx. 50MB/batch.
+            total_batches = ceil(length / (10 * 1024 * 1204))  # Approx. 10MB/batch.
 
             token_idx = 0
-            label = f"Writing {self.dataset}/{split}"
+            label = f"Writing {dataset_safe_id}/{split}"
             for batch_idx in tqdm(range(total_batches), desc=label):
                 batch = dataset.shard(num_shards=total_batches, index=batch_idx, contiguous=True).with_format('numpy')
                 batch_data = np.concatenate(batch['data'])
@@ -55,7 +56,7 @@ class DatasetManager:
                 token_idx += len(batch_data)
             buffer.flush()
 
-    def validate(self, dataset) -> DatasetDict:
+    def validate(self, dataset: DatasetDict) -> DatasetDict:
         #
         if self.encoding.max_token_value >= 2**16:
             print("Encoding can't fit into uint16!")
@@ -71,8 +72,15 @@ class DatasetManager:
             exit(2)
 
         # If we don't have a declared validation split we need to generate one.
+        # Default: minimum of 0.5% or 
         if not self.validation_split:
-            dataset = dataset[self.training_split].train_test_split(test_size=self.generated_validation_set_ratio, shuffle=True)
+            _minimum_rows = 10  # Arbitrary for now.
+            rows = dataset[self.training_split].num_rows
+            if (self.test_set_ratio * rows) < _minimum_rows:
+                self.test_set_ratio = rows / _minimum_rows
+                print(f"Increasing validation split size to {self.test_set_ratio}.")
+
+            dataset = dataset[self.training_split].train_test_split(test_size=self.test_set_ratio, shuffle=True)
             self.validation_split = "test"
         
         return dataset

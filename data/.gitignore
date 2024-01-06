@@ -1,0 +1,4 @@
+# Only include the root Python files.
+*
+!*.py
+!.gitignore
