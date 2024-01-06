@@ -4,9 +4,9 @@ from pathlib import Path
 
 @dataclass
 class Config:
-    layers: int = 8
+    layers: int = 12
     attention_heads: int = 8
-    embedding_size: int = 512
+    embedding_size: int = 768
     block_size: int = 512
     bias: Union[bool, float] = False  # Set to False to disable.
     vocab_size: int = 50304

@@ -10,7 +10,7 @@ from .data import DataLoader
 
 #
 class Trainer:
-    validation_cadence: int = 10 # steps
+    validation_cadence: int = 50 # steps
 
     #
     @staticmethod
@@ -34,7 +34,14 @@ class Trainer:
             # Perform validation at `validation_cadence`.
             if i > 0 and i % Trainer.validation_cadence == 0:
                 loss_estimate = model.estimate_loss(data, 1)
-                print(f"(validation loss: {loss_estimate['validation']:.4f})")
+                checkpoint = {
+                    "config": config,
+                    "iteration": i,
+                    "model": model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                }
+                torch.save(checkpoint, data_path / "checkpoint")
+                print(f"(Saving checkpoint, validation loss: {loss_estimate['validation']:.4f})")
                 t0 = time.time()  # reset
 
             # Forward pass.
