@@ -34,7 +34,7 @@ class LanguageModel(nn.Module):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     #
-    def forward(self, sample, targets=None) -> Optional[torch.Tensor]:
+    def forward(self, sample, targets=None) -> tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
         # `sample` and `targets` are both (B, T) tensors of ints.
         B, T = sample.shape
 
@@ -46,7 +46,7 @@ class LanguageModel(nn.Module):
         logits = self.normalise(logits) # (B, T, C)
         predictions = self.decode(logits) # shape: (B, T, config.vocab_size)
 
-        loss = None
+        loss: Optional[torch.Tensor] = None
         if targets is not None:
             # Can only compute loss if we have target comparisons.
             # Reshape `predictions` and `targets` as needed and compute `cross_entropy(...)`.
@@ -76,7 +76,7 @@ class LanguageModel(nn.Module):
 
     #
     @torch.no_grad()
-    def estimate_loss(self, data: DataLoader, batch_size: int) -> tuple[str, float]:
+    def estimate_loss(self, data: DataLoader, batch_size: int) -> dict[str, torch.Tensor]:
         self.eval()
 
         def _loss(split: str) -> float:
@@ -84,7 +84,7 @@ class LanguageModel(nn.Module):
             _, loss = self(seq, next)
             return loss.item()
 
-        def _mean_loss(split: str, samples: int = 1) -> float:
+        def _mean_loss(split: str, samples: int = 1) -> torch.Tensor:
             losses = torch.tensor([_loss(split) for _ in range(samples)])
             return losses.mean()
 

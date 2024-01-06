@@ -20,7 +20,6 @@ class DatasetManager:
     test_set_ratio: float = 0.05
     feature_name: str = "text"
     encoding = get_encoding("gpt2")
-    filename_split_mapping = {"train": "training", "test": "validation"}
 
     def prepare(self) -> None:
         print(f"Preparing dataset: {self.dataset}")
@@ -35,7 +34,7 @@ class DatasetManager:
             dataset = DatasetDict({ self.training_split: dataset })
         splits = ", ".join(list(dataset.keys()))
         print(f"Native splits: ({splits})")
-        dataset = self.validate(dataset)
+        dataset, split_mapping = self.validate(dataset)
 
         # Encode splits.
         encoder = partial(DatasetManager.encode, self)
@@ -43,7 +42,7 @@ class DatasetManager:
 
         # Join into single, large blob for each split for downstream consumption.
         for split, dataset in dataset.items():
-            filename = self.filename_split_mapping.get(split, split)
+            filename = split_mapping.get(split, split)
             length = np.sum(dataset['count'], dtype=np.uint64)
             buffer = np.memmap(dataset_path / filename, dtype=np.uint16, mode='w+', shape=(length,))
             total_batches = ceil(length / (10 * 1024 * 1204))  # Approx. 10MB/batch.
@@ -68,12 +67,12 @@ class DatasetManager:
             print(f"Training split '{self.training_split}' not found.")
             exit(1)
 
-        if self.validation_split and self.validation_split not in dataset:
-            print(f"Validation split '{self.validation_split}' not found.")
-            exit(2)
+        if self.validation_split:
+            if self.validation_split not in dataset:
+                print(f"Validation split '{self.validation_split}' not found.")
+                exit(2)
 
         # If we don't have a declared validation split we need to generate one.
-        # Default: minimum of 0.5% or 
         if not self.validation_split:
             _minimum_rows = 10  # Arbitrary for now.
             rows = dataset[self.training_split].num_rows
@@ -84,7 +83,8 @@ class DatasetManager:
             dataset = dataset[self.training_split].train_test_split(test_size=self.test_set_ratio, shuffle=True)
             self.validation_split = "test"
         
-        return dataset
+        filename_split_mapping: dict[str, str] = {self.training_split: "training", self.validation_split: "validation"}
+        return dataset, filename_split_mapping
 
     @staticmethod
     def encode(cls, data) -> dict:

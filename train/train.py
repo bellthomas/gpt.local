@@ -33,12 +33,12 @@ class Trainer:
 
             # Perform validation at `validation_cadence`.
             if i > 0 and i % Trainer.validation_cadence == 0:
-                loss = model.estimate_loss(data, 1)
-                print(f"(validation loss: {loss['validation']:.4f})")
+                loss_estimate = model.estimate_loss(data, 1)
+                print(f"(validation loss: {loss_estimate['validation']:.4f})")
                 t0 = time.time()  # reset
 
             # Forward pass.
-            accumulation_steps = 1
+            accumulation_steps: int = 1
             for _ in range(accumulation_steps):
                 _, loss = model(seq, suc)
                 loss /= accumulation_steps
