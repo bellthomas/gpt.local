@@ -1,15 +1,22 @@
 import argparse
-import data as D
 import os
-from .train import Trainer
 from pathlib import Path
 
-# Handle arguments.
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('--collection', default="herodotus", help='')
-args = parser.parse_args()
+import data as D
+from . import Trainer
 
-# TODO: validation, use args.
-data_path = Path(f"{os.path.dirname(D.__file__)}/{args.collection}").absolute()
-print(data_path)
-Trainer.train(args, data_path)
+if __name__ == "__main__":
+    # Handle arguments.
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--collection', default="bellthomas/herodotus", help='')
+    args = parser.parse_args()
+
+    # TODO: validation, use args.
+    collection_safe_id = args.collection.replace("/", "-")
+    data_path = Path(f"{os.path.dirname(D.__file__)}/{collection_safe_id}").absolute()
+
+    try:
+        Trainer.train(args, data_path)
+    except KeyboardInterrupt:
+        print("Aborting.")
+        exit(0)

@@ -20,7 +20,7 @@ class DatasetManager:
     test_set_ratio: float = 0.05
     feature_name: str = "text"
     encoding = get_encoding("gpt2")
-
+    filename_split_mapping = {"train": "training", "test": "validation"}
 
     def prepare(self) -> None:
         print(f"Preparing dataset: {self.dataset}")
@@ -43,12 +43,13 @@ class DatasetManager:
 
         # Join into single, large blob for each split for downstream consumption.
         for split, dataset in dataset.items():
+            filename = self.filename_split_mapping.get(split, split)
             length = np.sum(dataset['count'], dtype=np.uint64)
-            buffer = np.memmap(dataset_path / split, dtype=np.uint16, mode='w+', shape=(length,))
+            buffer = np.memmap(dataset_path / filename, dtype=np.uint16, mode='w+', shape=(length,))
             total_batches = ceil(length / (10 * 1024 * 1204))  # Approx. 10MB/batch.
 
             token_idx = 0
-            label = f"Writing {dataset_safe_id}/{split}"
+            label = f"Writing {dataset_safe_id}/{filename}"
             for batch_idx in tqdm(range(total_batches), desc=label):
                 batch = dataset.shard(num_shards=total_batches, index=batch_idx, contiguous=True).with_format('numpy')
                 batch_data = np.concatenate(batch['data'])

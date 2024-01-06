@@ -13,9 +13,8 @@ cd gpt.local
 
 # Download training data.
 python -m data
-> Downloading collection: herodotus
-> Training: 163,509 tokens
-> Validation: 18,407 tokens
+> Downloading collection: bellthomas/herodotus
+> ...
 
 
 # Train a GPT.
@@ -31,6 +30,7 @@ python -m train
 
 #### To implement/explore...
 
+ - [x] Hugging Face dataset integration.
  - [ ] CUDA support
  - [ ] Checkpoint saving
  - [ ] Text generation from trained model
