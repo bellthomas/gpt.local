@@ -1,7 +1,8 @@
 import torch
 from pathlib import Path
 import numpy as np
-from .language_model.Config import Config
+
+from .language_model import Config
 
 class DataLoader:
     splits: set[str] = {"training", "validation"}

@@ -1,17 +1,12 @@
 from pathlib import Path
-from dataclasses import dataclass
-from pickletools import optimize
-from tabnanny import check
-import torch
-import time
+from typing import Optional
 import math
 import itertools
-from typing import Optional
+import torch
+import time
 
-from .language_model.LanguageModel import LanguageModel
-from .language_model.Config import Config
-from .data import DataLoader
-from . import Checkpoint
+from . import Checkpoint, DataLoader
+from .language_model import LanguageModel, Config
 
 #
 class Trainer:
@@ -96,7 +91,7 @@ class Trainer:
 
             # Perform validation at `validation_cadence`.
             if i > self.starting_iteration and i % Trainer.validation_cadence == 0:
-                loss_estimate = model.estimate_loss(data, 1)
+                loss_estimate = model.estimate_loss(data, batch_size)
                 checkpoint = self.create_checkpoint(i, loss_estimate['validation'].item())
                 torch.save(checkpoint, self.experiment_path / "checkpoint")
                 with open(self.log_path, "a") as log:
