@@ -38,9 +38,7 @@ class Trainer:
     @staticmethod
     def load(experiment_path: Path, data_path: Path) -> 'Trainer':
         checkpoint_path = experiment_path / "checkpoint"
-
         if checkpoint_path.exists() and checkpoint_path.is_file():
-            print(checkpoint_path)
             checkpoint: Checkpoint = torch.load(checkpoint_path)
             print(checkpoint)
             return Trainer.load_checkpoint(checkpoint, experiment_path, data_path)
@@ -51,7 +49,7 @@ class Trainer:
     ##############
         
     def create_checkpoint(self, iteration: int, loss: float) -> Checkpoint:
-        c = Checkpoint(
+        return Checkpoint(
             config=self.config,
             model_state=self.model.state_dict(),
             optimizer_state=self.optimizer.state_dict(),
@@ -59,8 +57,6 @@ class Trainer:
             training_history=self.training_history,
             loss=loss,
         )
-        print(c)
-        return c
     
     @staticmethod
     def load_checkpoint(checkpoint: Checkpoint, experiment_path: Path, data_path: Path) -> 'Trainer':
@@ -98,8 +94,9 @@ class Trainer:
             # Perform validation at `validation_cadence`.
             if i > self.starting_iteration and i % Trainer.validation_cadence == 0:
                 loss_estimate = model.estimate_loss(data, 1)
-                torch.save(self.create_checkpoint(i, loss_estimate['validation'].item()), self.experiment_path / "checkpoint")
-                # print(f"(Saved checkpoint, validation loss: {loss_estimate['validation'].item():.4f})")
+                checkpoint = self.create_checkpoint(i, loss_estimate['validation'].item())
+                torch.save(checkpoint, self.experiment_path / "checkpoint")
+                print(checkpoint)
                 t0 = time.perf_counter()  # reset
 
             # Forward pass.

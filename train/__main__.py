@@ -25,12 +25,12 @@ if __name__ == "__main__":
     experiments_root = Path(os.path.dirname(__file__)) / "experiments"
     experiment_id = args.experiment if args.experiment else f"{int(time())}_experiment"
     experiment_path = experiments_root / experiment_id
+    checkpoint_path = experiment_path / "checkpoint"
     try:
         # Perform status check if requested.
         if args.status:
-            if experiment_path.exists(): 
-                checkpoint_path = experiment_path / "checkpoint"
-                if checkpoint_path.is_file():
+            if experiment_path.exists():
+                if checkpoint_path.is_file() and checkpoint_path.exists():
                     checkpoint: Checkpoint = torch.load(checkpoint_path)
                     print(checkpoint)
                 else:
@@ -40,7 +40,7 @@ if __name__ == "__main__":
             exit(0)
 
         # Create Trainer instance.
-        if not experiment_path.exists():
+        if not experiment_path.exists() or not checkpoint_path.exists():
             print(f"*Experiment: {experiment_id}")
             experiment_path.mkdir(parents=True, exist_ok=True)
             t = Trainer(cfg, experiment_path, data_path)
@@ -49,5 +49,5 @@ if __name__ == "__main__":
             t = Trainer.load(experiment_path, data_path)
         t.execute()
     except KeyboardInterrupt:
-        print("Aborting.")
+        print("\nAborting.")
         exit(0)
