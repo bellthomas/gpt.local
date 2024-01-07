@@ -5,12 +5,10 @@ from time import time
 import torch
 import tiktoken
 import sys
-
-from model.generate import Generator
 sys.stdout.reconfigure(encoding='utf-8')
 
 import data as D
-from . import Trainer, Config, Checkpoint
+from . import Trainer, Config, Checkpoint, Generator
 
 if __name__ == "__main__":
     # Handle arguments.
