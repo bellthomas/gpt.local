@@ -1,7 +1,6 @@
 import argparse
 import os
 from pathlib import Path
-from tabnanny import check
 from time import time
 import torch
 
@@ -13,13 +12,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--collection', default="bellthomas/herodotus", help='')
     parser.add_argument('--experiment', default=None, help='')
+    parser.add_argument('--device', default="mps", help='')
     parser.add_argument('--status', action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
 
     # TODO: validation, use args.
     collection_safe_id = args.collection.replace("/", "-")
     data_path = Path(f"{os.path.dirname(D.__file__)}/{collection_safe_id}").absolute()
-    cfg = Config(device="mps")
+    cfg = Config(device=args.device)
 
     # Prepare/load experiment.
     experiments_root = Path(os.path.dirname(__file__)) / "experiments"

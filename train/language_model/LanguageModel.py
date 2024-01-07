@@ -108,3 +108,20 @@ class LanguageModel(nn.Module):
             lr=learning_rate,
             betas=betas
         )
+    
+    #
+    def parameters_count(self) -> int:
+        params = sum(p.numel() for p in self.parameters())
+        params -= self.decode.weight.numel()
+        return params
+
+    #
+    def flops_per_iteration(self, passes_per_iteration: int = 1) -> int:
+        # ref: PaLM paper, Appendix B: https://arxiv.org/abs/2204.02311
+        N = self.parameters_count()
+        cfg = self.config
+        L, H, Q, T = cfg.layers, cfg.attention_heads, cfg.head_size(), cfg.block_size
+        flops_per_token = 6*N + 12*L*H*Q*T
+        flops_per_pass = flops_per_token * T
+        flops_per_iter = flops_per_pass * passes_per_iteration
+        return flops_per_iter

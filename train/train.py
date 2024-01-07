@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 import math
 import itertools
 import torch
@@ -40,9 +39,9 @@ class Trainer:
             checkpoint: Checkpoint = torch.load(checkpoint_path)
             print(checkpoint)
             return Trainer.load_checkpoint(checkpoint, experiment_path, data_path)
-        else:
-            print("Experiment doesn't have any existing checkpoints, starting fresh.")
-            return Trainer(Config(device="mps"), experiment_path, data_path)
+
+        print("Experiment doesn't have any existing checkpoints, can't load.")
+        exit(1)
 
     ##############
         
@@ -73,13 +72,12 @@ class Trainer:
     #
     def execute(self):
         data = DataLoader(self.config, self.data_path)
-        print(f"Training... (device: {self.config.device})")
+        print(f"Training... (parameters: {self.model.parameters_count() / 1e6:.2f}M, device: {self.config.device})")
 
-        batch_size = 8
+        batch_size = self.config.batch_size
         model = self.model
         optimizer = self.optimizer
-        config = self.config
-        data_path = self.data_path
+        flops_per_iteration = model.flops_per_iteration(batch_size * self.config.gradient_accumulation_steps)
 
         seq, suc = data.fetch_batch("training", batch_size)
         t0 = time.perf_counter()
@@ -100,10 +98,9 @@ class Trainer:
                 t0 = time.perf_counter()  # reset
 
             # Forward pass.
-            accumulation_steps: int = 1
-            for _ in range(accumulation_steps):
+            for _ in range(self.config.gradient_accumulation_steps):
                 _, loss = model(seq, suc)
-                loss /= accumulation_steps
+                loss /= self.config.gradient_accumulation_steps
                 seq, suc = data.fetch_batch("training", batch_size)
                 loss.backward()
 
@@ -117,8 +114,9 @@ class Trainer:
             dt = t1 - t0
             t0 = t1
             self.training_history += dt
-            lossf = loss.item() * accumulation_steps
-            print(f"    ({i}) loss {lossf:.4f} ({dt*1000:.2f}ms)")
+            lossf = loss.item() * self.config.gradient_accumulation_steps
+            flops = flops_per_iteration / dt
+            print(f"    ({i}) loss {lossf:.4f} ({dt*1000:.2f}ms, ~{flops/1e12:.2f} tflops)")
 
     #
     @staticmethod
@@ -141,4 +139,3 @@ class Trainer:
         assert 0 <= decay_ratio <= 1
         coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # range: 0...1
         return minimum_learning_rate + coeff * (initial_learning_rate - minimum_learning_rate)
-
