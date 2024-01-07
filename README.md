@@ -32,7 +32,7 @@ python -m train
 
  - [x] Hugging Face dataset integration.
  - [x] Checkpoint saving
- - [ ] Checkpoint loading
+ - [x] Checkpoint loading
  - [ ] Text generation from trained model
  - [ ] CUDA support
  - [ ] Improve performance to bring in-line with other PyTorch GPT implementations.
