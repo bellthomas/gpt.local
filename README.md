@@ -18,12 +18,12 @@ python -m data
 
 
 # Train a GPT.
-python -m train
-> Initialised data path: ./gpt.local/data/herodotus
-> Step 0: loss 10.9303 (2385.89ms)
-> Step 1: loss 10.9261 (1333.66ms)
-> Step 2: loss 10.9168 (1496.20ms)
-> ...
+python -m train --collection "openwebtext" --experiment "openwebtext-1" --device cpu
+> *Experiment: openwebtext-1
+> Data: ./gpt.local/data/openwebtext/{validation,training}
+> Training... (parameters: 124.11M, device: cpu)
+>     (0) loss 10.9385 (9715.26ms, ~0.51 tflops)
+>     ...
 ```
 
 ---

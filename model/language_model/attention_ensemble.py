@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from .Head import Head
-from .Config import Config
+from .head import Head
+from .config import Config
 
 class AttentionEnsemble(nn.Module):
     def __init__(self, config: Config):

@@ -13,7 +13,7 @@ class Trainer:
     experiment_path: Path
     config: Config
 
-    validation_cadence: int = 50 # steps
+    validation_cadence: int = 5 # steps
     checkpoint_filename: str = "checkpoint"
     checkpoint_path: Path
     log_path: Path
@@ -67,7 +67,12 @@ class Trainer:
         trainer.starting_iteration = checkpoint.iteration
         trainer.training_history = checkpoint.training_history
         return trainer
-
+    
+    def compile(self) -> None:
+        # self.model = torch.compile(self.model)
+        # self.model.to(self.config.device)
+        # print("Compiled model.")
+        ...
 
     #
     def execute(self):
@@ -75,39 +80,39 @@ class Trainer:
         print(f"Training... (parameters: {self.model.parameters_count() / 1e6:.2f}M, device: {self.config.device})")
 
         batch_size = self.config.batch_size
-        model = self.model
-        optimizer = self.optimizer
-        flops_per_iteration = model.flops_per_iteration(batch_size * self.config.gradient_accumulation_steps)
+        flops_per_iteration = self.model.flops_per_iteration(batch_size * self.config.gradient_accumulation_steps)
 
         seq, suc = data.fetch_batch("training", batch_size)
         t0 = time.perf_counter()
         for i in itertools.count(self.starting_iteration):
             # Dynamiclly compute learning rate to use this iteration.
             lr = Trainer.learning_rate(i, 6e-4)
-            for param_group in optimizer.param_groups:
+            for param_group in self.optimizer.param_groups:
                 param_group['lr'] = lr
 
             # Perform validation at `validation_cadence`.
             if i > self.starting_iteration and i % Trainer.validation_cadence == 0:
-                loss_estimate = model.estimate_loss(data, batch_size)
+                loss_estimate = self.model.estimate_loss(data, batch_size)
                 checkpoint = self.create_checkpoint(i, loss_estimate['validation'].item())
                 torch.save(checkpoint, self.experiment_path / "checkpoint")
                 with open(self.log_path, "a") as log:
                     log.write(checkpoint.csv_row() + "\n")
                 print(checkpoint)
+                del checkpoint  # Free up memory.
+                del loss_estimate
                 t0 = time.perf_counter()  # reset
 
             # Forward pass.
             for _ in range(self.config.gradient_accumulation_steps):
-                _, loss = model(seq, suc)
+                _, loss = self.model(seq, suc)
                 loss /= self.config.gradient_accumulation_steps
                 seq, suc = data.fetch_batch("training", batch_size)
                 loss.backward()
 
             # Clip to remediate exploding gradients + backwards pass.
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-            optimizer.zero_grad(set_to_none=True)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            self.optimizer.step()
+            self.optimizer.zero_grad(set_to_none=True)
 
             # Stats.
             t1 = time.perf_counter()

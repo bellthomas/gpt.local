@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from .language_model.Config import Config
+from .language_model import Config
 
 @dataclass
 class Checkpoint:

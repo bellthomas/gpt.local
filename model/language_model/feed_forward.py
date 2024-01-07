@@ -1,5 +1,5 @@
 import torch.nn as nn
-from .Config import Config
+from .config import Config
 
 class FeedForward(nn.Module):
     def __init__(self, config: Config, fanout: int = 4):

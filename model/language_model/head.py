@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from .Config import Config
+from .config import Config
 
 class Head(nn.Module):
     def __init__(self, config: Config):

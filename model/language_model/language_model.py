@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from typing import Optional
-from .Transformer import Transformer
-from .Config import Config
+from .transformer import Transformer
+from .config import Config
 from ..data import DataLoader
 
 
@@ -57,18 +57,18 @@ class LanguageModel(nn.Module):
 
         return predictions, loss
 
-    def generate(self, sample, tokens_to_generate: int):
+    def generate(self, sample, tokens_to_generate: int = 1, temperature: float = 1.0) -> torch.Tensor:
         # `sample` is (B, T) tensor: the prediction context for each batch.
         for _ in range(tokens_to_generate):
             # Steps:
             #   1. Crop sample's length to be a maximum of the block size.
             #   2. Execute forward pass to generate predictions.
-            #   3. Extract the final index (logits representing the final, newly-generated token).
+            #   3. Extract the final index (logits representing the final, newly-generated token) scaled by the desired temperature.
             #   4. Softmax & sample to get successor token.
             #   5. Append generated token to sample to maintain context for future predictions.
             cropped_sample = sample[:, -self.config.block_size:]
             prediction, _ = self(cropped_sample)
-            final_indices = prediction[:, -1, :] # shape: (B, C)
+            final_indices = prediction[:, -1, :] / temperature  # shape: (B, C)
             successor_probabilities = F.softmax(final_indices, dim=-1) # shape: (B, C)
             successor = torch.multinomial(successor_probabilities, num_samples=1) # shape: (B, 1)
             sample = torch.cat((sample, successor), dim=1) # shape: (B, T+1)

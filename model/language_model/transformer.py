@@ -1,7 +1,7 @@
 import torch.nn as nn
-from .FeedForward import FeedForward
-from .AttentionEnsemble import AttentionEnsemble
-from .Config import Config
+from .feed_forward import FeedForward
+from .attention_ensemble import AttentionEnsemble
+from .config import Config
 
 class Transformer(nn.Module):
     def __init__(self, config: Config):
